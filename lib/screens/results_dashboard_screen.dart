@@ -21,6 +21,8 @@ class _ResultsDashboardScreenState extends State<ResultsDashboardScreen> {
   String? _selectedGameId;
   String? _selectedClientId;
 
+  DateTime _selectedDate = DateTime.now();
+
   StreamSubscription<DocumentSnapshot<Map<String, dynamic>>>? _resultSub;
   Timer? _persistDebounce;
 
@@ -45,12 +47,30 @@ class _ResultsDashboardScreenState extends State<ResultsDashboardScreen> {
 
   int get _totalAmount => _jodiTotal + _figureTotal;
 
-  String _todayKey() {
-    final now = DateTime.now();
-    final y = now.year.toString().padLeft(4, '0');
-    final m = now.month.toString().padLeft(2, '0');
-    final d = now.day.toString().padLeft(2, '0');
-    return '$y-$m-$d';
+  String _dateKey(DateTime d) {
+    final y = d.year.toString().padLeft(4, '0');
+    final m = d.month.toString().padLeft(2, '0');
+    final day = d.day.toString().padLeft(2, '0');
+    return '$y-$m-$day';
+  }
+
+  String get _selectedDateKey => _dateKey(_selectedDate);
+
+  Future<void> _pickDate() async {
+    final picked = await showDatePicker(
+      context: context,
+      firstDate: DateTime(2000),
+      lastDate: DateTime(2100),
+      initialDate: _selectedDate,
+    );
+    if (picked == null) return;
+
+    setState(() {
+      _selectedDate = picked;
+      _values.clear();
+    });
+
+    _listenToResultDoc();
   }
 
   DocumentReference<Map<String, dynamic>>? _resultDocRef() {
@@ -61,7 +81,7 @@ class _ResultsDashboardScreenState extends State<ResultsDashboardScreen> {
     if (gameId == null || clientId == null) return null;
 
     final docId =
-        '${_todayKey()}__'
+        '${_selectedDateKey}__'
         '$gameId'
         '__'
         '$clientId';
@@ -119,7 +139,7 @@ class _ResultsDashboardScreenState extends State<ResultsDashboardScreen> {
       if (ref == null) return;
 
       final payload = <String, dynamic>{
-        'dateKey': _todayKey(),
+        'dateKey': _selectedDateKey,
         'gameId': _selectedGameId,
         'clientId': _selectedClientId,
         'jodiTotal': _jodiTotal,
@@ -221,6 +241,8 @@ class _ResultsDashboardScreenState extends State<ResultsDashboardScreen> {
               child: ListView(
                 padding: const EdgeInsets.all(12),
                 children: [
+                  _dateRow(context),
+                  const SizedBox(height: 12),
                   _gridSection(
                     context: context,
                     title: null,
@@ -244,6 +266,40 @@ class _ResultsDashboardScreenState extends State<ResultsDashboardScreen> {
                   _bottomControls(context),
                 ],
               ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _dateRow(BuildContext context) {
+    final settings = widget.controller.settings;
+    final base = Theme.of(context).textTheme.titleMedium?.fontSize ?? 16;
+    final textStyle = Theme.of(context).textTheme.titleMedium?.copyWith(
+      color: Colors.white,
+      fontWeight: FontWeight.w700,
+      fontSize: base * settings.fontScale,
+    );
+
+    return Card(
+      color: const Color(0xFF0C0D12),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: BorderSide(color: settings.borderColor, width: 1),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Row(
+          children: [
+            Expanded(child: Text('Date: $_selectedDateKey', style: textStyle)),
+            FilledButton.icon(
+              style: FilledButton.styleFrom(
+                backgroundColor: settings.borderColor,
+              ),
+              onPressed: _pickDate,
+              icon: const Icon(Icons.calendar_month),
+              label: const Text('Pick'),
             ),
           ],
         ),

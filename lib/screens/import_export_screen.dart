@@ -2,7 +2,10 @@ import 'dart:convert';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+
+import '../services/download_helper.dart';
 
 class ImportExportScreen extends StatefulWidget {
   const ImportExportScreen({super.key});
@@ -55,6 +58,20 @@ class _ImportExportScreenState extends State<ImportExportScreen> {
         _controller.text = text;
         _status = 'Export complete.';
       });
+
+      if (kIsWeb) {
+        final fileName =
+            'track_management_export_${DateTime.now().toIso8601String()}.json'
+                .replaceAll(':', '-');
+        await downloadTextFile(
+          filename: fileName,
+          content: text,
+          mimeType: 'application/json',
+        );
+        if (mounted) {
+          setState(() => _status = 'Export complete. Download started.');
+        }
+      }
     } catch (e) {
       setState(() => _error = e.toString());
     } finally {
@@ -135,44 +152,60 @@ class _ImportExportScreenState extends State<ImportExportScreen> {
 
       final base = FirebaseFirestore.instance.collection('users').doc(uid);
 
-      // Use a batch; if very large, user can split import.
-      final batch = FirebaseFirestore.instance.batch();
-      var ops = 0;
+      final writes =
+          <({String collection, String id, Map<String, dynamic> data})>[];
 
-      void addSet(String collection, Map<String, dynamic> item) {
+      void addWrite(String collection, Map<String, dynamic> item) {
         final id = item['id']?.toString();
         final data = item['data'];
         if (id == null || id.isEmpty || data is! Map) return;
         final decoded = _decodeFirestore(data);
         if (decoded is! Map) return;
-
-        batch.set(
-          base.collection(collection).doc(id),
-          Map<String, dynamic>.from(decoded),
-          SetOptions(merge: true),
-        );
-        ops++;
+        writes.add((
+          collection: collection,
+          id: id,
+          data: Map<String, dynamic>.from(decoded),
+        ));
       }
 
       for (final item in games) {
-        if (item is Map) addSet('games', Map<String, dynamic>.from(item));
+        if (item is Map) addWrite('games', Map<String, dynamic>.from(item));
       }
       for (final item in clients) {
-        if (item is Map) addSet('clients', Map<String, dynamic>.from(item));
+        if (item is Map) addWrite('clients', Map<String, dynamic>.from(item));
       }
       for (final item in results) {
-        if (item is Map) addSet('results', Map<String, dynamic>.from(item));
+        if (item is Map) addWrite('results', Map<String, dynamic>.from(item));
       }
 
-      if (ops == 0) {
+      if (writes.isEmpty) {
         setState(() => _error = 'Nothing to import (no valid records found).');
         return;
       }
 
-      await batch.commit();
+      const chunkSize = 400;
+      var imported = 0;
+      for (var i = 0; i < writes.length; i += chunkSize) {
+        final end = (i + chunkSize) > writes.length
+            ? writes.length
+            : (i + chunkSize);
+        final batch = FirebaseFirestore.instance.batch();
+        for (final w in writes.sublist(i, end)) {
+          batch.set(
+            base.collection(w.collection).doc(w.id),
+            w.data,
+            SetOptions(merge: true),
+          );
+        }
+        await batch.commit();
+        imported += (end - i);
+        if (mounted) {
+          setState(() => _status = 'Importing... $imported/${writes.length}');
+        }
+      }
 
       setState(() {
-        _status = 'Import complete. Imported/updated $ops documents.';
+        _status = 'Import complete. Imported/updated $imported documents.';
       });
     } catch (e) {
       setState(() => _error = e.toString());
@@ -202,6 +235,31 @@ class _ImportExportScreenState extends State<ImportExportScreen> {
                 icon: const Icon(Icons.download),
                 label: const Text('Export JSON'),
               ),
+              if (kIsWeb)
+                OutlinedButton.icon(
+                  onPressed: _busy
+                      ? null
+                      : () async {
+                          final text = _controller.text.trim();
+                          if (text.isEmpty) {
+                            setState(
+                              () =>
+                                  _error = 'Nothing to download. Export first.',
+                            );
+                            return;
+                          }
+                          final fileName =
+                              'track_management_export_${DateTime.now().toIso8601String()}.json'
+                                  .replaceAll(':', '-');
+                          await downloadTextFile(
+                            filename: fileName,
+                            content: text,
+                            mimeType: 'application/json',
+                          );
+                        },
+                  icon: const Icon(Icons.file_download),
+                  label: const Text('Download file'),
+                ),
               FilledButton.icon(
                 onPressed: _busy ? null : _import,
                 icon: const Icon(Icons.upload),
