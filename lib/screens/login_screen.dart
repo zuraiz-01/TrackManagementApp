@@ -116,6 +116,7 @@ class _LoginScreenState extends State<LoginScreen> {
                               tooltip: _obscurePassword
                                   ? 'Show password'
                                   : 'Hide password',
+                              color: Theme.of(context).colorScheme.primary,
                               onPressed: () {
                                 setState(() {
                                   _obscurePassword = !_obscurePassword;
