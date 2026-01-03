@@ -127,7 +127,7 @@ class GamesScreen extends StatelessWidget {
                           Text(
                             'ID: ${doc.id}',
                             style: Theme.of(context).textTheme.labelSmall
-                                ?.copyWith(color: Colors.black54),
+                                ?.copyWith(color: Colors.white54),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                           ),

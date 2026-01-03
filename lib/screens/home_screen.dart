@@ -31,29 +31,60 @@ class _HomeScreenState extends State<HomeScreen> {
       const ImportExportScreen(),
     ];
 
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(_titleForIndex(_index)),
-        actions: [
-          IconButton(
-            tooltip: 'Logout',
-            onPressed: () => FirebaseAuth.instance.signOut(),
-            icon: const Icon(Icons.logout),
+    return AnimatedBuilder(
+      animation: widget.settingsController,
+      builder: (context, _) {
+        final settings = widget.settingsController.settings;
+        return Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [settings.backgroundColor, const Color(0xFF000000)],
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+            ),
           ),
-        ],
-      ),
-      body: pages[_index],
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: _index,
-        onDestinationSelected: (i) => setState(() => _index = i),
-        destinations: const [
-          NavigationDestination(icon: Icon(Icons.grid_on), label: 'Games'),
-          NavigationDestination(icon: Icon(Icons.people), label: 'Clients'),
-          NavigationDestination(icon: Icon(Icons.calculate), label: 'Results'),
-          NavigationDestination(icon: Icon(Icons.tune), label: 'Settings'),
-          NavigationDestination(icon: Icon(Icons.import_export), label: 'I/O'),
-        ],
-      ),
+          child: Scaffold(
+            backgroundColor: Colors.transparent,
+            appBar: AppBar(
+              title: Text(_titleForIndex(_index)),
+              actions: [
+                IconButton(
+                  tooltip: 'Logout',
+                  onPressed: () => FirebaseAuth.instance.signOut(),
+                  icon: const Icon(Icons.logout),
+                ),
+              ],
+            ),
+            body: pages[_index],
+            bottomNavigationBar: NavigationBar(
+              selectedIndex: _index,
+              onDestinationSelected: (i) => setState(() => _index = i),
+              destinations: const [
+                NavigationDestination(
+                  icon: Icon(Icons.grid_on),
+                  label: 'Games',
+                ),
+                NavigationDestination(
+                  icon: Icon(Icons.people),
+                  label: 'Clients',
+                ),
+                NavigationDestination(
+                  icon: Icon(Icons.calculate),
+                  label: 'Results',
+                ),
+                NavigationDestination(
+                  icon: Icon(Icons.tune),
+                  label: 'Settings',
+                ),
+                NavigationDestination(
+                  icon: Icon(Icons.import_export),
+                  label: 'I/O',
+                ),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 

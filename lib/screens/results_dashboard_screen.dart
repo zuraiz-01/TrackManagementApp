@@ -458,7 +458,7 @@ class _ResultsDashboardScreenState extends State<ResultsDashboardScreen> {
       color: const Color(0xFF0C0D12),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
-        side: const BorderSide(color: Color(0xFFB0004B), width: 1),
+        side: BorderSide(color: settings.borderColor, width: 1),
       ),
       child: Padding(
         padding: const EdgeInsets.all(12),

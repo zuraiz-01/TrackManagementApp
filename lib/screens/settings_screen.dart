@@ -138,7 +138,7 @@ class SettingsScreen extends StatelessWidget {
           decoration: BoxDecoration(
             color: color,
             borderRadius: BorderRadius.circular(6),
-            border: Border.all(color: Colors.black12),
+            border: Border.all(color: Colors.white12),
           ),
         ),
         onTap: () async {
@@ -205,7 +205,7 @@ class SettingsScreen extends StatelessWidget {
                 if (!enabled)
                   const Text(
                     'Disabled',
-                    style: TextStyle(color: Colors.black54),
+                    style: TextStyle(color: Colors.white54),
                   ),
               ],
             ),
